@@ -1,3 +1,4 @@
+from pprint import pprint
 import os, sys, shlex
 # from IPython import embed
 from subprocess import call, check_output
@@ -17,7 +18,7 @@ import src
 from src.auxiliary import unfold_config
 from src.run_gwas import GWAS_Run
 import warnings
-
+import time
 ############################################################################################################
 ############################################################################################################
 
@@ -28,7 +29,6 @@ def extract_formatter_tokens(pattern):
     
     regex = re.compile('{[A-Za-z_]+}')
     tokens = {}
-    print(pattern)
     for x in regex.findall(pattern):
         token = x[1:-1]
         tokens[token] = None
@@ -62,7 +62,6 @@ def prepare_config(args):
     tokens = extract_formatter_tokens(args.suffix)
     config["run_id"] = args.run_id
     config["experiment_id"] = args.experiment_id
-    print(config)
     for token in tokens:
         if token in config.keys():
             if isinstance(config[token], list):
@@ -79,11 +78,6 @@ def prepare_config(args):
     
     ###############
 
-    # def overwrite_config_items(config, args):
-    #     for attr, value in args.__dict__.items():
-    #         if attr in config.keys() and value is not None:
-    #             config[attr] = value
-
     config = unfold_config(args.yaml_config_file, no_unfolding_for=["covariates_config"])
     
     config["suffix"] = suffix
@@ -99,14 +93,9 @@ def prepare_config(args):
     config["run_id"] = args.run_id
     config["experiment_id"] = args.experiment_id
 
-    #if args.coma_experiment is not None:
-    #    config["experiment"] = args.coma_experiment
-    for _fp in ["phenotype_file", "phenotype_intermediate", "tmpdir", "gwas"]:
-    # for _fp in ["phenotype_file", "phenotype_file_tmp", "tmpdir", "gwas"]:
+    for _fp in ["phenotype_file", "phenotype_intermediate", "gwas"]:
         fp = config["filename_patterns"][_fp]
         tokens = extract_formatter_tokens(fp)
-        print("tokencillos:", tokens)
-        print(f"{_fp}: {fp}")
         filename = fp.format(**{token: config.get(token, None) for token in tokens})
         
         if _fp != "gwas":
@@ -126,7 +115,10 @@ def prepare_config(args):
         config["chromosomes"] = args.chromosomes
 
     config["gwas_software"] = args.gwas_software
-    config["bgen_sample_file"] = args.bgen_sample_file
+    
+    if args.bgen_sample_file is None:
+       config["bgen_sample_file"] = config["filename_patterns"]["genotype"]["bgen_sample_file"]
+       del config["filename_patterns"]["genotype"]["bgen_sample_file"]
 
 
     return config
@@ -135,8 +127,7 @@ def prepare_config(args):
 def adjust_for_covariates(config):
     
     # config = yaml.load(open(os.path.join("config_files/coma", config_file)))
-    # experiment = config["filename_patterns"]["gwas"].split("__")[0]
-
+    
     command  = "Rscript src/preprocess_files_for_GWAS.R\n"
     command += "--phenotype_file {}\n".format(config["filenames"]["phenotype_file"])
     if config["phenotype_list"] is not None:
@@ -157,43 +148,47 @@ def adjust_for_covariates(config):
     command += "--gwas_software {}\n".format(config["gwas_software"])
     if config["bgen_sample_file"] is not None:
       command += "--bgen_sample_file {}\n".format(config["bgen_sample_file"])
-#    command += "--overwrite_output\n"
     
-    print("\nPreprocessing the phenotype file to perform GWAS on {}.".format(config["gwas_software"]))    
-    print(command)
-    # print("\n")
+    # command += "--overwrite_output\n"
     
-    call(shlex.split(command))
-    print("\n")
+    return command
 
-def generate_summary_and_figures(config):
-    
-    ### TODO: Use a configuration file for the file name patterns
 
+def build_bgen_command(config):
+    
     gwas_folder = os.path.dirname(config["filename_patterns"]["gwas"])
-
-    command  = "Rscript src/postprocessing/gwas_analysis.R\n"
-    command += "--output_folder .\n"
-    command += "--gwas_folder {}\n".format(gwas_folder) # "output/traditional_indices" + "/" + config["suffix"],        
-    command += "--gwas_pattern GWAS__{}_{{phenotype}}\n".format(config["suffix"])
-    if config["phenotype_list"] is not None:
-      command += "--phenotypes {}\n".format(" ".join(config["phenotype_list"])) 
-    command += "--qqplot_pooled\n"
-    command += "--cache_rds\n"
-
-    print("\nCreating Manhattan plots, Q-Q plots and region-wise summaries.")    
-    print(command)
-    print("\n")
+    gwas_folder_by_region =gwas_folder + "/by_region"
     
-    call(shlex.split(command))
+    pheno_file = config["filenames"]["phenotype_intermediate"]
+    os.makedirs(gwas_folder_by_region, exist_ok=True)    
+
+    command = "python src/bgenie_per_region.py\n"
+    command += f"--gwas_folder {gwas_folder_by_region}\n"
+    command += f"--pheno_file {pheno_file}\n"    
+    return command
 
 
-def main(config):
-        
-    #adjust_for_covariates(config)
-    #GWAS_Run(config).run()
-    #yaml.dump(config, open(os.path.join(os.path.dirname(config["filename_patterns"]["gwas"]), "config.yaml"), "w"))
-    generate_summary_and_figures(config)
+def postprocess_gwas_by_region(config):
+    
+    experiment_id = config["experiment_id"] 
+    run_id = config["run_id"]
+    gwas_file_pattern = config["filename_patterns"]["gwas"]
+    gwas_folder = os.path.dirname(gwas_file_pattern)
+
+    df = pd.read_csv(config["filenames"]["phenotype_file"])
+    
+    phenotypes = list(df.columns[df.columns.str.startswith("z")])
+    phenotypes = " ".join(phenotypes)
+    
+    
+    command = "python src/postprocessing/postprocess_gwas_by_region.py\n" 
+    command += f"--experiment_id {experiment_id} \n"
+    command += f"--run_id {run_id} \n"
+    command += f"--input_results_dir {gwas_folder} \n"
+    command += f"--output_filename_pattern {gwas_file_pattern}\n"
+    command += f"--phenotypes {phenotypes}\n"
+    
+    return command
 
 
 if __name__ == "__main__":
@@ -215,13 +210,45 @@ if __name__ == "__main__":
     parser.add_argument("--quality_control", "-qc", default=None)
     parser.add_argument("--chromosomes", "-chr", default=None, help="Chromosomes as a list of comma-separated ranges, e.g. \"1-4,6,10-15\"")    
     parser.add_argument("--name_rules", default="config_files/filename_rules/filename_rules.yaml")
-    # parser.add_argument("--suffix", default="{covariates}__{sample_white_lists}__{sample_black_lists}__{quality_control}", help="Subfolder ")
     parser.add_argument("--suffix", default="{experiment_id}_{run_id}", help="")
+    
     parser.add_argument("--experiment_id", help="MLflow experiment ID")
     parser.add_argument("--run_id", help="MLflow run ID")
     
+    parser.add_argument("--no_print_commands", action="store_true", help="If set, commands will not be printed out.")
+    parser.add_argument("--dry-run", "--dry_run", action="store_true", help="If set, it will only print the commands that are to be run.")
+    parser.add_argument("--print_config", action="store_true", help="If set, it will only print the commands that are to be run.")
+    parser.add_argument("--steps_to_run", nargs="+", default=["1", "2", "3"], help="a sublist of [1,2,3], indicating which steps are to be performed.")
+    
     args = parser.parse_args()
-
     config = prepare_config(args)
 
-    main(config)
+    if args.print_config:
+        pprint(config)
+        print("\n")
+
+    adj_command = adjust_for_covariates(config)
+    gwas_command = build_bgen_command(config)    
+    postproc_command = postprocess_gwas_by_region(config)
+    
+    commands = {
+      "1": adj_command,
+      "2": gwas_command,
+      "3": postproc_command
+    }  
+    
+    messages = {
+      "1": "\nPreprocessing the phenotype file to perform GWAS on {}\n.".format(config["gwas_software"]),
+      "2": "\nSubmitting GWAS jobs to the queue\n",
+      "3": "\nConcatenating per-region GWAS files, creating Manhattan plots, Q-Q plots and region-wise summaries\n"
+    }   
+ 
+    for k, command in commands.items():
+        if k in args.steps_to_run: 
+            if not args.no_print_commands:
+                print(command)
+            if not args.dry_run:
+                print(messages[k])
+                call(shlex.split(command))
+                
+    yaml.dump(config, open(os.path.join(os.path.dirname(config["filename_patterns"]["gwas"]), "config.yaml"), "w"))
