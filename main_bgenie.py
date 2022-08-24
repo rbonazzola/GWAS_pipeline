@@ -165,6 +165,7 @@ def build_bgen_command(config):
     command = "python src/bgenie_per_region.py\n"
     command += f"--gwas_folder {gwas_folder_by_region}\n"
     command += f"--pheno_file {pheno_file}\n"    
+    # command += f"--dry-run"
     return command
 
 
