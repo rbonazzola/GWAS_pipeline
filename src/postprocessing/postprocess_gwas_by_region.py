@@ -77,8 +77,8 @@ def build_commands(args, phenotype):
     commands = [
       path_extension, 
       conda_command, 
-      #concat_command, 
-      #sort_command, 
+      concat_command, 
+      sort_command, 
       postproc_command
     ]
         

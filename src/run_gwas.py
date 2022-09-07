@@ -67,7 +67,7 @@ class GWAS_Run:
             command += ["--maf", str(self.config.qc["maf_thres"])]
 
         #TODO: add option to output PLINK messages to the console
-        subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.call(command)#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     #####################################################################
 
@@ -135,8 +135,8 @@ class GWAS_Run:
                 irem_file_basename = os.path.basename(irem_file)
                 shutil.move(irem_file, os.path.join(gwas_dir, "logs", irem_file_basename))
 
-        if self.config.delete_temp_flag:
-            os.remove(self.config.pheno_f)
+        #if self.config.delete_temp_flag:
+         #   os.remove(self.config.pheno_f)
 
         
 

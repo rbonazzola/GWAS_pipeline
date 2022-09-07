@@ -4,7 +4,7 @@ suppressPackageStartupMessages({
   library(argparse)
 })
 
-concatenate_gwas <- function(experiment, z, results_dir, output_file) {
+concatenate_gwas <- function(experiment, phenotype, results_dir, output_file) {
   
   setwd(system("git rev-parse --show-toplevel", intern = TRUE))
   
@@ -14,16 +14,22 @@ concatenate_gwas <- function(experiment, z, results_dir, output_file) {
       
     if (!grepl(pattern = "txt.gz", file))
       next
-   
-    df <- read.table(gzfile(file), header=TRUE, sep=" ")
+    
+    print(file)
+    res <- try(df <- read.table(gzfile(file), header=TRUE, sep=" "))
+
+    if (inherits(res, "try-error")) {
+      print(file)
+      next
+    }
     df_first <- df %>% select(chr, rsid, pos, af, a_0, a_1) %>% rename(CHR=chr, SNP=rsid, BP=pos, AF=af)
     
-    df_ <- df %>% select(starts_with(z))
+    df_ <- df %>% select(starts_with(phenotype))
     
-    beta_column <- paste0(z, "_beta")
-    se_column <- paste0(z, "_se")
-    t_column <- paste0(z, "_t")
-    log10p_column <- paste0(z, ".log10p")
+    beta_column <- paste0(phenotype, "_beta")
+    se_column <- paste0(phenotype, "_se")
+    t_column <- paste0(phenotype, "_t")
+    log10p_column <- paste0(phenotype, ".log10p")
     
     col_names <- c(beta_column, se_column, t_column, log10p_column)
     
@@ -50,6 +56,8 @@ parser$add_argument("--output_filename_pattern")
 args <- parser$parse_args()
 
 pending_jobs_file = file.path(dirname(args$input_results_dir), "pending_jobs")
+
+if ( file.exists(pending_jobs_file) ) {
 while (file.info(pending_jobs_file)$size != 0)  {
   f <- file(pending_jobs_file, open="rb")
   nlines <- 0L
@@ -60,6 +68,7 @@ while (file.info(pending_jobs_file)$size != 0)  {
   close(f)
   print(glue::glue("Waiting for {nlines} pending jobs..."))
   Sys.sleep(60)
+}
 }
 
 for (experiment in args$experiment_ids) {

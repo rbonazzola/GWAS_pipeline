@@ -180,7 +180,8 @@ def postprocess_gwas_by_region(config):
     
     phenotypes = list(df.columns[df.columns.str.startswith("z")])
     phenotypes = " ".join(phenotypes)
-    
+    # TODO: modify how phenoytpes are passed to this command!
+    phenotypes = "LVEDV"# LVM RVEDV LVSph" 
     
     command = "python src/postprocessing/postprocess_gwas_by_region.py\n" 
     command += f"--experiment_id {experiment_id} \n"

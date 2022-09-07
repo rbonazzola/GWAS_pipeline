@@ -10,7 +10,7 @@ get_include_list <- function(samples_to_include=NULL) {
   if (is.null(samples_to_include)) {
     #TODO: change default
     #wl <- read.delim("data/ids_list/british_ids.txt", sep = reader::get.delim("data/ids_list/british_ids.txt"))[,1]
-    wl <- read.delim("data/ids_list/british_ids.txt")#, sep = reader::get.delim("data/ids_list/british_ids.txt"))[,1]
+    wl <- read.delim("data/datasets/ids_list/british_ids.txt")#, sep = reader::get.delim("data/ids_list/british_ids.txt"))[,1]
   } else if (length(samples_to_include) == 1) {
     wl <- read.delim(samples_to_include)#, sep = reader::get.delim(samples_to_include))[,1]
   } else {
