@@ -64,7 +64,10 @@ def is_number(s):
 def get_repo_rootdir():
     import shlex
     from subprocess import check_output
+    cwd = os.getcwd()
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
     repo_rootdir = check_output(shlex.split("git rev-parse --show-toplevel")).strip().decode('ascii')
+    os.chdir(cwd)
     return repo_rootdir
 
 
@@ -75,8 +78,11 @@ def unfold_config(token, no_unfolding_for=[]):
       no_unfolding_for: a list of dict keys for which the yaml shouldn't be unfolded, and instead kept as a path
     Returns: A dictionary with all the yaml files replaces by their content.
     '''
+    
+    os.chdir(os.getcwd())
     repo_rootdir = get_repo_rootdir()
     yaml_dir = os.path.join(repo_rootdir, "config_files")
+        
     if is_yaml_file(token):
         #TODO: COMMENT AND DOCUMENT THIS!!!
         try:

@@ -1,9 +1,31 @@
 # install.packages("argparse")
-library(argparse)
 
-setwd(system("git rev-parse --show-toplevel", intern = TRUE))
+suppressPackageStartupMessages({
+  library(argparse)
+  library(tidyverse)
+})
 
-source("utils/preprocessing_for_gwas_helpers.R")
+
+getCurrentFileLocation <-  function()
+{
+    this_file <- commandArgs() %>% 
+    tibble::enframe(name = NULL) %>%
+    tidyr::separate(col=value, into=c("key", "value"), sep="=", fill='right') %>%
+    dplyr::filter(key == "--file") %>%
+    dplyr::pull(value)
+    if (length(this_file)==0)
+    {
+      this_file <- rstudioapi::getSourceEditorContext()$path
+    }
+    return(dirname(this_file))
+}
+
+cwd = getcwd()
+setwd(getCurrentFileLocation())
+gwas_repo_root_dir = setwd(system("git rev-parse --show-toplevel", intern = TRUE))
+setwd(cwd)
+
+source(glue("{gwas_repo_root_dir}/utils/preprocessing_for_gwas_helpers.R"))
 
 # This script loads a phenotype file, adjusts for covariates, 
 # inverse-normalize the values and excludes samples
