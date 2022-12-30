@@ -2,9 +2,16 @@ from pprint import pprint
 import os, sys, shlex
 # from IPython import embed
 from subprocess import call, check_output
-repo_rootdir = check_output(shlex.split("git rev-parse --show-toplevel")).strip().decode('ascii')
+
+from src.auxiliary import get_repo_rootdir, unfold_config
+from src.run_gwas import GWAS_Run
+
+repo_rootdir = get_repo_rootdir()
+print(f"This directory is {repo_rootdir}")
+# check_output(shlex.split("git rev-parse --show-toplevel")).strip().decode('ascii')
 os.chdir(repo_rootdir)
-sys.path.append(os.getcwd())
+print(repo_rootdir)
+sys.path.append(repo_rootdir)
 
 # Import modules
 import pandas as pd
@@ -14,9 +21,8 @@ from pprint import pprint
 from string import Formatter
 from copy import deepcopy
 
-import src
-from src.auxiliary import unfold_config
-from src.run_gwas import GWAS_Run
+from IPython import embed
+
 import warnings
 import time
 ############################################################################################################
@@ -40,11 +46,12 @@ def prepare_config(args):
     # TODO: solve this warning. 
     # This is just a workaround to prevent too many warning messages to show up.
     # Warning message is: YAMLLoadWarning: calling yaml.load() without Loader=... is deprecated, as the default Loader is unsafe. Please read https://msg.pyyaml.org/load for full details.
-    with warnings.catch_warnings():
-      warnings.simplefilter("ignore")    
-      config = yaml.load(open(args.yaml_config_file))
-      ### Generate suffix
-      name_rules = yaml.load(open(args.name_rules))
+#    with warnings.catch_warnings():
+ #     warnings.simplefilter("ignore")    
+    
+    config = yaml.full_load(open(args.yaml_config_file))
+    ### Generate suffix
+    name_rules = yaml.full_load(open(args.name_rules))
 
     if args.covariates is not None:
         config["covariates_config"] = args.covariates
@@ -127,8 +134,8 @@ def prepare_config(args):
 def adjust_for_covariates(config):
     
     # config = yaml.load(open(os.path.join("config_files/coma", config_file)))
-    
-    command  = "Rscript src/preprocess_files_for_GWAS.R\n"
+        
+    command  = f"Rscript {repo_rootdir}/src/preprocess_files_for_GWAS.R\n"
     command += "--phenotype_file {}\n".format(config["filenames"]["phenotype_file"])
     if config["phenotype_list"] is not None:
       command += "--phenotypes {}\n".format(config["phenotype_list"])
@@ -162,7 +169,7 @@ def build_bgen_command(config):
     pheno_file = config["filenames"]["phenotype_intermediate"]
     os.makedirs(gwas_folder_by_region, exist_ok=True)    
 
-    command = "python src/bgenie_per_region.py\n"
+    command = f"python {repo_rootdir}/src/bgenie_per_region.py\n"
     command += f"--gwas_folder {gwas_folder_by_region}\n"
     command += f"--pheno_file {pheno_file}\n"    
     # command += f"--dry-run"
@@ -180,10 +187,11 @@ def postprocess_gwas_by_region(config):
     
     phenotypes = list(df.columns[df.columns.str.startswith("z")])
     phenotypes = " ".join(phenotypes)
-    # TODO: modify how phenoytpes are passed to this command!
-    phenotypes = "LVEDV"# LVM RVEDV LVSph" 
     
-    command = "python src/postprocessing/postprocess_gwas_by_region.py\n" 
+    # TODO: modify how phenoytpes are passed to this command!
+    # phenotypes = "LVEDV"# LVM RVEDV LVSph" 
+    
+    command = f"python {repo_rootdir}/src/postprocessing/postprocess_gwas_by_region.py\n" 
     command += f"--experiment_id {experiment_id} \n"
     command += f"--run_id {run_id} \n"
     command += f"--input_results_dir {gwas_folder} \n"

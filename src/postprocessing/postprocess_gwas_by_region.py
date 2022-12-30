@@ -3,8 +3,14 @@ import os, sys
 from subprocess import call, check_output
 import shlex
 
-repo_rootdir = check_output(shlex.split("git rev-parse --show-toplevel")).strip().decode('ascii')
-os.chdir(repo_rootdir)
+try:    
+    os.chdir(os.environ["GWAS_REPO"])    
+except KeyError:
+    print("Environment variable $GWAS_REPO was not found. If you are not located within the repo, the following may fail.")
+    os.chdir(check_output(shlex.split("git rev-parse --show-toplevel")).strip())
+
+#repo_rootdir = check_output(shlex.split("git rev-parse --show-toplevel")).strip().decode('ascii')
+#os.chdir(repo_rootdir)
 sys.path.append(os.getcwd())
 
 from utils.ARC_helpers.SGE_utils import *
