@@ -4,7 +4,14 @@ import argparse
 from subprocess import call, check_output
 
 import os, sys
-os.chdir(check_output(shlex.split("git rev-parse --show-toplevel")).strip())
+from IPython import embed
+
+try:    
+    os.chdir(os.environ["GWAS_REPO"])    
+except KeyError:
+    print("Environment variable $GWAS_REPO was not found. If you are not located within the repo, the following may fail.")
+    os.chdir(check_output(shlex.split("git rev-parse --show-toplevel")).strip())
+
 import pandas as pd
 sys.path.append(".")
 
@@ -37,7 +44,7 @@ def run_bgenie(regions, args, previous_chromosome, job_count):
     
     if int(chromosome) != int(previous_chromosome):
         try:
-            print("Created {job_count} batch job scripts for chromosome {chromosome}... ".format(job_count=job_count, chromosome=previous_chromosome))
+            print(f"Created {job_count} batch job scripts for chromosome {previous_chromosome}... ")
         except:
             pass
         job_count = 0
