@@ -2,6 +2,7 @@
 
 suppressPackageStartupMessages({
   library(argparse)
+  library(glue)
   library(tidyverse)
 })
 
@@ -20,7 +21,7 @@ getCurrentFileLocation <-  function()
     return(dirname(this_file))
 }
 
-cwd = getcwd()
+cwd = getwd()
 setwd(getCurrentFileLocation())
 gwas_repo_root_dir = setwd(system("git rev-parse --show-toplevel", intern = TRUE))
 setwd(cwd)
