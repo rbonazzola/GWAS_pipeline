@@ -116,7 +116,7 @@ def prepare_config(args):
     
     config["sample_white_lists"] = args.sample_white_lists
     config["sample_black_lists"] = args.sample_black_lists
-    config["phenotype_list"] = args.phenotypes
+    config["phenotypes"] = args.phenotypes
 
     if args.chromosomes is not None:
         config["chromosomes"] = args.chromosomes
@@ -137,8 +137,8 @@ def adjust_for_covariates(config):
         
     command  = f"Rscript {repo_rootdir}/src/preprocess_files_for_GWAS.R\n"
     command += "--phenotype_file {}\n".format(config["filenames"]["phenotype_file"])
-    if config["phenotype_list"] is not None:
-      command += "--phenotypes {}\n".format(config["phenotype_list"])
+    if config["phenotypes"] is not None:
+      command += "--phenotypes {}\n".format(config["phenotypes"])
     else:
       pass # default behaviour, i.e. use all phenotypes (all columns except those excluded in the following line)
     
@@ -185,12 +185,14 @@ def postprocess_gwas_by_region(config):
 
     df = pd.read_csv(config["filenames"]["phenotype_file"])
     
-    phenotypes = list(df.columns[df.columns.str.startswith("z")])
+    if config["phenotypes"] is None:
+        df = pd.read_csv(config["filenames"]["phenotype_file"])
+        phenotypes = list(df.columns[df.columns != "ID"])
+    else:
+        phenotypes = config["phenotypes"]
+
     phenotypes = " ".join(phenotypes)
-    
-    # TODO: modify how phenoytpes are passed to this command!
-    # phenotypes = "LVEDV"# LVM RVEDV LVSph" 
-    
+
     command = f"python {repo_rootdir}/src/postprocessing/postprocess_gwas_by_region.py\n" 
     command += f"--experiment_id {experiment_id} \n"
     command += f"--run_id {run_id} \n"
