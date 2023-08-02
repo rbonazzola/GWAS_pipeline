@@ -41,7 +41,7 @@ if __name__ == "__main__":
         count += 1
         submit_sge_job(
             jobname,
-            commands=[path_extension, "module load anaconda", "conda activate base", filter_bgen_py_command],
+            commands=[path_extension, "module load anaconda", "source activate base", filter_bgen_py_command],
             memory_limit="8G", walltime="01:00:00", dry_run=False
         )
 

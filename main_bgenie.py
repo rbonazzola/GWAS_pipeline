@@ -93,6 +93,9 @@ def prepare_config(args):
 
     if args.phenotype_file is not None:
         config["filename_patterns"]["phenotype"] = args.phenotype_file
+    
+    if args.phenotype_intermediate is not None:
+        config["filename_patterns"]["phenotype_intermediate"] = args.phenotype_intermediate
 
     if args.gwas_file is not None:
         config["filename_patterns"]["gwas"] = args.gwas_file
@@ -100,7 +103,7 @@ def prepare_config(args):
     config["run_id"] = args.run_id
     config["experiment_id"] = args.experiment_id
 
-    for _fp in ["phenotype_file", "phenotype_intermediate", "gwas"]:
+    for _fp in ["phenotype", "phenotype_intermediate", "gwas"]:
         fp = config["filename_patterns"][_fp]
         tokens = extract_formatter_tokens(fp)
         filename = fp.format(**{token: config.get(token, None) for token in tokens})
@@ -136,7 +139,7 @@ def adjust_for_covariates(config):
     # config = yaml.load(open(os.path.join("config_files/coma", config_file)))
         
     command  = f"Rscript {repo_rootdir}/src/preprocess_files_for_GWAS.R\n"
-    command += "--phenotype_file {}\n".format(config["filenames"]["phenotype_file"])
+    command += "--phenotype_file {}\n".format(config["filenames"]["phenotype"])
     if config["phenotypes"] is not None:
       command += "--phenotypes {}\n".format(config["phenotypes"])
     else:
@@ -183,10 +186,10 @@ def postprocess_gwas_by_region(config):
     gwas_file_pattern = config["filename_patterns"]["gwas"]
     gwas_folder = os.path.dirname(gwas_file_pattern)
 
-    df = pd.read_csv(config["filenames"]["phenotype_file"])
+    # df = pd.read_csv(config["filenames"]["phenotype_intermediate"])
     
     if config["phenotypes"] is None:
-        df = pd.read_csv(config["filenames"]["phenotype_file"])
+        df = pd.read_csv(config["filenames"]["phenotype_intermediate"])
         phenotypes = list(df.columns[df.columns != "ID"])
     else:
         phenotypes = config["phenotypes"]

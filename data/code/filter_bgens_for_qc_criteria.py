@@ -16,7 +16,7 @@ def get_QCed_snps(bgen_file, snps_stats_file=None, snps_list_file=None, bgen_ofi
   if bgen_ofile is None:
       bgen_ofile = bgen_file[:-5] + "_snps_passing_QC.bgen"
 
-  qctool_stats_command = "qctool -g {bgen_file} -snp-stats -osnp {snps_stats_file}".format(bgen_file=bgen_file, snps_stats_file=snps_stats_file)
+  qctool_stats_command = f"qctool -g {bgen_file} -snp-stats -osnp {snps_stats_file}"
   check_call(shlex.split(qctool_stats_command))
  
   snps_stats_df = pd.read_csv(snps_stats_file, sep=" ", comment="#")
@@ -35,18 +35,24 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--chromosome")
-    parser.add_argument("--start_pos")
-    parser.add_argument("--end_pos")
+    parser.add_argument("--intermediate_bgen_file", type=str)
+    parser.add_argument("--snps_stats_file", type=str)
+    parser.add_argument("--snps_list_file", type=str)
+    parser.add_argument("--final_bgen_file", type=str)
     
     args = parser.parse_args()    
-    region = args.__dict__
-    region["chromosome_adjusted"] = region["chromosome"]
+    # region = args.__dict__
+    # region["chromosome_adjusted"] = region["chromosome"]
 
-    bgen_file = OUTPUT_GENOTYPE_FILE_PATTERN.format(**region) 
-    snps_stats_file = SNPS_STATS_FILE_PATTERN.format(**region)
-    snps_list_file = SNPS_LIST_FILE_PATTERN.format(**region)
-    bgen_ofile = FINAL_BGEN_FILE_PATTERN.format(**region)
+    # bgen_file = OUTPUT_GENOTYPE_FILE_PATTERN.format(**region) 
+    # snps_stats_file = SNPS_STATS_FILE_PATTERN.format(**region)
+    # snps_list_file = SNPS_LIST_FILE_PATTERN.format(**region)
+    # bgen_ofile = FINAL_BGEN_FILE_PATTERN.format(**region)
 
-    get_QCed_snps(bgen_file, snps_stats_file, snps_list_file, bgen_ofile)
+    get_QCed_snps(
+        bgen_file=args.intermediate_bgen_file, 
+        snps_stats_file=args.snps_stats_file, 
+        snps_list_file=args.snps_list_file, 
+        bgen_ofile=args.final_bgen_file
+    )
 

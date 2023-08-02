@@ -130,7 +130,7 @@ if __name__ == "__main__":
         job_config = {
           "jobname": jobname,
           "memory_limit": "12G", 
-          "walltime": "01:00:00",           
+          "walltime": "12:00:00",           
           "stderr": f"runs/logs/bgenie/{jobname}.err", 
           "stdout": f"runs/logs/bgenie/{jobname}.out"
         }
