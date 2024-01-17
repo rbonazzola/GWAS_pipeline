@@ -2,8 +2,7 @@
 
 This repository contains code to execute GWAS on UK Biobank data, using the Plink and BGENIE tools, and perform downstream analysis on the results.
 
-The folder `src/` contains scripts to perform pre-processing of the data and GWAS execution.
-The folder `analysis/` contains scripts to perform statistical analysis on the GWAS results and generate figures (like Manhattan plots or Q-Q plot).
+The folder `src/` contains scripts to perform pre-processing of the data, GWAS execution, and post-processing of the GWAS summary statistics ((like Manhattan plots or Q-Q plot).
 The folder `download_data/` contains scripts to download data from the UK Biobank and filter the genotype files.
 
 ## Requirements
@@ -29,7 +28,7 @@ For computing genetic PCs, a different Docker image is used, namely the one prov
 
 For LocusZoom plots, another Docker image will be provided soon.
 
-## Usage
+## Overview
 The pipeline consists of scripts for:
 
 1) **Fetching the data**: download genotype and covariate data from the UK Biobank.
@@ -43,6 +42,8 @@ The pipeline consists of scripts for:
 5) **Downstream analysis**: Integrate data from other sources in order to interpret the results. We currently support: proximity analysis using `biomaRt`, gene ontology term enrichment with `g:Profiler`, transcriptome-wide association studies with `S-PrediXcan` and pleiotropy analysis using the IEU GWAS Open Project.
 
 Steps 2 to 4 rely on a single `yaml` configuration file.
+
+## Usage
 
 #### Fetching data
 Instructions on how to download each kind of genetic data can be found [in this link](https://biobank.ndph.ox.ac.uk/showcase/showcase/docs/ukbgene_instruct.html).
@@ -71,7 +72,33 @@ One needs to execute the command
 
 The complexity is located in the YAML configuration file.
 
-##### Configuration file
+#### Post-processing
+
+This script takes a set of BGENIE output files, one for each region, possibly containing the summary statistics of many different phenotypes, and compiles them into one file per phenotype (which spans the whole genome):
+```bash
+Rscript src/postprocessing/concatenate_gwas.R \
+--input_results_dir gwas_output/by_region \
+--output_filename_pattern output/GWAS__{phenotype} \
+--phenotypes LVEDV
+```
+
+The following sorts the GWAS summary statistics by chromosome and position. This can be convenient for some applications (for example LocusZoom plots, or if the file wants be indexed):
+```bash
+bash src/postprocessing/sort_by_chr_and_pos.sh gwas_output/GWAS_LVEDV.tsv
+```
+
+The following command generates Manhattan plots, Q-Q plots and per-region summaries (best association for each ~2Mb region):
+```bash
+Rscript src/postprocessing/gwas_analysis.R \
+--gwas_folder gwas_output/cardiac_indices \
+--gwas_pattern GWAS_{phenotype} \
+--phenotypes LVEDV LVESV LVM LVEF LVSV \
+--cache_rds
+```
+
+You can set the `--debug` flag if you want additional output.
+
+## Configuration file
 
     chromosomes: 20-22  
     data_dir: <>  
@@ -89,24 +116,7 @@ The complexity is located in the YAML configuration file.
             phenotype_list: <>,   
             covariates: <>
         },
-        gwas: "gwas/{phenotype}/gwas__{phenotype}{suffix}"
-    }
-    exec:
-        plink: "plink"
-    suffix: "{TOKEN1}__{TOKEN2}"
-    options: {
-        TOKEN1: VALUE1_i
-        TOKEN2: VALUE2_j            
-    }
-    suffix_tokens: {
-      TOKEN1: {
-        VALUE1_1: NAME1_1,  
-        VALUE1_2: NAME1_2 
-      },
-      TOKEN2: {
-        VALUE2_1: NAME2_1,  
-        VALUE2_2: NAME2_2
-      }
+        gwas: "gwas_output/{phenotype}/gwas__{phenotype}"
     }
 
 - `chromosomes` (optional): it consists of comma-separated ranges, where a range is a single number (e.g. `1`) or a proper range (e.g. `3-7`).
@@ -124,12 +134,4 @@ The complexity is located in the YAML configuration file.
     - `phenotype_tmp_file` (optional): name of a temporary file that will be used as input to the GWAS software if the previous does not match the expected format.
     - `covariates` (not used yet).
   - `gwas` (required): name pattern for output files. It can contain the fields `{phenotype}` and `{suffix}`.
-  - `gwas_suffix`: if `{suffix}` is present in the above field, this field should contain a string containing different .
-- `options`: dictionary containing the names of the options as keys and values the names and values of the options, respectively. 
-- `suffix_tokens`: nested dictionary, detailing the string that will be added to the output name for each of the options.
-- `exec`: path of the executables.
-  - `bgenie` (optional, default: `bgenie`): path to the BGENIE executable.
   - `plink` (optional, default: `plink`): path to the BGENIE executable.
-  
-#### Analyze results
-The code for this task is contained in the folder `analysis/`.
