@@ -118,13 +118,14 @@ regionwise_summary <- function(gwas_df, regions, ofile) {
 
 load_gwas_df <- function(file, overwrite_rds) {
   
-    if (!file.exists(file) || file.info(file)$size == 0) {
+    gwas_f <- file
+    gwas_f_rds <- gsub("tsv", "rds", gwas_f)
+    
+    if (!file.exists(gwas_f) && !file.exists(gwas_f_rds) || file.info(file)$size == 0) {
         logging::logdebug(glue("File {file} does not exist or it is empty."))
         next
     }
     
-    gwas_f <- file
-    gwas_f_rds <- gsub("tsv", "rds", gwas_f)
     rds_log_flag <- TRUE
     if (file.exists(gwas_f_rds) && !overwrite_rds) {
         if (rds_log_flag){
@@ -164,9 +165,10 @@ plot_manhattan <- function(gwas_df, ofile, figure_type, colors) {
       genomewideline = -log10(1.5e-10),
       suggestiveline = -log10(5e-8), 
       col = colors,
-      ylim = c(2, 20)
+      ylim = c(1.5, 20)
     )
     
+    axis(2, at = 2*1:10)
     dev.off()
   
 }
