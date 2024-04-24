@@ -47,7 +47,7 @@ GreedyExec <- "GreedyRelated"
 partition_suffix_pat <- "{100*frac_replication}n{100*(1-frac_replication)}" 
 
 if (!file.exists(args$tmpdir)) {
-  logging::loginfo(glue("Folder {args$tmpdir} does not exist. Creating..."))
+  logging::loginfo(g("Folder {args$tmpdir} does not exist. Creating..."))
   dir.create(args$tmpdir)
 }
 
