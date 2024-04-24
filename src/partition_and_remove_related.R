@@ -17,6 +17,7 @@ parser$add_argument("--output_dir", default="~/01_repos/CardiacGWAS/results")
 parser$add_argument("--tmpdir", default="tmp/")
 parser$add_argument("--seed", default=42, nargs="+")
 parser$add_argument("--gzip_output", default=FALSE, action="store_true", help="Whether to gzip the output files.")
+parser$add_argument("--na_code", default="-999", help="Code representing NA.")
 
 # Output
 parser$add_argument("-o", "--output_file_prefix", required=TRUE)
@@ -122,7 +123,7 @@ for (SEED in SEEDS) {
   phenotype_file = args$phenotype_file
   phenotype_df = read.delim(phenotype_file, sep = "\t")
   print(phenotype_df)
-  phenotype_df[duplicated(phenotype_df$ID),] = -9
+  phenotype_df[duplicated(phenotype_df$ID),] = args$na_code
   phenotype_df[duplicated(phenotype_df$ID), "ID"] = -100 * (1:sum(duplicated(phenotype_df$ID)))
   phenotype_df$ID <- as.character(phenotype_df$ID)
   rownames(phenotype_df) <- phenotype_df$ID
@@ -166,7 +167,7 @@ for (SEED in SEEDS) {
       readr::write_delim(
           pheno_df, 
           ofile_discovery, 
-          col_names = TRUE, delim = "\t", na = "-9"
+          col_names = TRUE, delim = "\t", na = args$na_code
       )
       
       if (args$gzip_output) {
@@ -181,7 +182,7 @@ for (SEED in SEEDS) {
       readr::write_delim(
           pheno_df, 
           ofile_replication, 
-          col_names = TRUE, delim = "\t", na = "-9", 
+          col_names = TRUE, delim = "\t", na = args$na_code, 
       )
       
       if (args$gzip_output) {
