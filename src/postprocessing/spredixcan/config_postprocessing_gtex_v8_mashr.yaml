@@ -1,0 +1,26 @@
+spredixcan_exec: '/home/rodrigo/PhD/software/MetaXcan/software/SPrediXcan.py'
+spredixcan_output_pattern: "SPrediXcan/{}__{}__GTEx_v8__mashr.csv"
+
+model_db_folder: "/home/rodrigo/doctorado/data/genetics/GTEx/GTEx_v8/prediction_models/eqtl/mashr"
+model_regex: '.*/mashr_(.*).db'
+covariances_regex: '.*/mashr_(.*).txt.gz'
+
+model_pattern: 'mashr_{tissue}.db'
+covariances_pattern: 'mashr_{tissue}.txt.gz'
+
+# gwas_results: "/media/rodrigo/bd2fea02-a909-49bc-9c6c-e0750941ca71/data/GWAS/output/coma/2020-09-11_02-13-41/test_std_covariates_PC__GBR_unrelated__qc/BGEN/GWAS__z0__test_std_covariates_PC__GBR_unrelated__qc.tsv"
+gwas_folder: "/home/rodrigo/01_repos/GWAS_pipeline/output/coma/finetuned_mlruns"
+gwas_pattern: "GWAS_{phenotype}.tsv"
+gwas_harmon_pattern: "GWAS_harmonized_{phenotype}.tsv"
+model_db_snp_key: "varID"
+
+harmonization_script: "harmonization_commands.sh"
+spredixcan_script: "spredixcan_commands_gtex_v8_mashr.sh"
+
+PARSING_SCRIPT: '/home/rodrigo/data/doctorado/repos/GWAS_pipeline/utils/summary-gwas-imputation/src/gwas_parsing.py'
+VARIANT_METADATA: '/usr/not-backed-up2/gwas_ref_data/data/reference_panel_1000G/variant_metadata.txt.gz'
+CHAIN_FILE: "/home/rodrigo/01_repos/GWAS_pipeline/data/hg19ToHg38.over.chain.gz"
+
+runs:
+  - "2020-09-11_02-13-41"
+  - "2020-09-30_12-36-48"
